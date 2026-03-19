@@ -7,6 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 
+
 CATEGORY_KEYWORDS = {
     "positive_emotion": {
         "joy", "happy", "happiness", "love", "gratitude", "grateful", "hope", "hopeful",
@@ -68,6 +69,7 @@ CATEGORY_KEYWORDS = {
     }
 }
 
+
 CATEGORY_PRIORITY = [
     "positive_emotion",
     "negative_emotion",
@@ -78,6 +80,7 @@ CATEGORY_PRIORITY = [
     "sports_politics_pets",
     "other"
 ]
+
 
 def parse_hashtags(cell):
     if pd.isna(cell):
@@ -90,9 +93,11 @@ def parse_hashtags(cell):
     tags = [t.lower() for t in tags if t]
     return tags
 
+
 def split_camel_case(s: str):
     parts = re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\d+", s)
     return [p.lower() for p in parts if p]
+
 
 def tag_to_tokens(tag: str):
     tag_clean = tag.replace ("_", " ")
@@ -100,6 +105,96 @@ def tag_to_tokens(tag: str):
     for piece in tag_clean.split():
         tokens.extend(split_camel_case(piece))
     return set(tokens)
+
+
+def hashtag_frequency(df, top_n=20):
+    all_tags = []
+    for sublist in df["hashtags_list"]:
+        for tag in sublist:
+            all_tags.append(tag)
+            
+    counts = Counter(all_tags)
+    
+    print("\nΣύνολο μοναδικών hshtags: ", len(counts))
+    print(f"\nTop {top_n} hashtags:")
+    for tag, c in counts.most_common(top_n):
+        print(f"{tag}: {c}")
+        
+    return counts
+
+
+def categorize_tags(tag: str):
+    tag = tag.lower()
+    tokens = tag_to_tokens(tag)
+    
+    scores = {}
+    for cat, words in CATEGORY_KEYWORDS.items():
+        score = 0 
+        
+        for w in words:
+            if w in tokens:
+                score += 3
+            
+            if len(w) >= 4 and w in tag:
+                score += 1
+                
+        scores[cat] = score
+    
+    best_cat = max(scores, key=scores.get)
+    
+    if scores[best_cat] == 0:
+        return "other"
+    return best_cat
+
+
+def assign_category(tags):
+    cats = {categorize_tags(t) for t in tags}
+    if len(cats) > 1 and "other" in cats:
+        cats.remove("other")
+    return sorted(cats)
+
+
+def category_frequency(df, top_n=20):
+    all_cats = []
+    for sublist in df["hashtag_categories"]:
+        for cat in sublist:
+            all_cats.append(cat)
+            
+    counts = Counter(all_cats)
+    
+    print("\nΣυχνότητα κατηγοριών: ")
+    for cat, c in counts.most_common():
+        print(f"{cat}: {c}")
+        
+    return counts
+
+
+def get_primary_category(categories):
+    for cat in CATEGORY_PRIORITY:
+        if cat in categories:
+            return cat
+    return "other"
+
+
+def primary_category_frequency(df):
+    count_prim = Counter(df["primary_category"])
+  
+    print("\nΣυχνότητα primary category: ")
+    for cat, c in count_prim.most_common():
+        print(f"{cat}: {c}")
+        
+    return count_prim
+
+
+def encoding_hashtags(df):
+    #df["primary_category"] = df["hashtag_categories"].apply(get_primary_category)
+    le = LabelEncoder()
+    df['primary_category_encoded'] = le.fit_transform(df['primary_category'])
+    print("\n")
+    print(dict(zip(le.classes_, le.transform(le.classes_))))
+    
+    return df,le 
+
 
 def load_data():
     df = pd.read_csv(r"C:\Users\Eleni\OneDrive\Υπολογιστής\sentimentdataset.csv", sep=';')
@@ -132,81 +227,6 @@ def load_data():
     
     return df
 
-def hashtag_frequency(df, top_n=20):
-    all_tags = [tag for tags in df["hashtags_list"] for tag in tags]
-    counts = Counter(all_tags)
-    
-    print("\nΣύνολο μοναδικών hshtags: ", len(counts))
-    print(f"\nTop {top_n} hashtags:")
-    for tag, c in counts.most_common(top_n):
-        print(f"{tag}: {c}")
-        
-    return counts
-
-def categorize_tags(tag: str):
-    tag = tag.lower()
-    tokens = tag_to_tokens(tag)
-    
-    scores = {}
-    for cat, words in CATEGORY_KEYWORDS.items():
-        score = 0 
-        
-        for w in words:
-            if w in tokens:
-                score += 3
-            
-            if len(w) >= 4 and w in tag:
-                score += 1
-                
-        scores[cat] = score
-    
-    best_cat = max(scores, key=scores.get)
-    
-    if scores[best_cat] == 0:
-        return "other"
-    return best_cat
-
-def assign_category(tags):
-    cats = {categorize_tags(t) for t in tags}
-    if len(cats) > 1 and "other" in cats:
-        cats.remove("other")
-    return sorted(cats)
-
-def category_frequency(df, top_n=20):
-    all_cats = [cat for cats in df["hashtag_categories"] for cat in cats]
-    counts = Counter(all_cats)
-    
-    print("\nΣυχνότητα κατηγοριών: ")
-    for cat, c in counts.most_common():
-        print(f"{cat}: {c}")
-        
-    return counts
-
-
-def get_primary_category(categories):
-    for cat in CATEGORY_PRIORITY:
-        if cat in categories:
-            return cat
-    return "other"
-
-
-def primary_category_frequency(df):
-    count_prim = Counter(df["primary_category"])
-  
-    print("\nΣυχνότητα primary category: ")
-    for cat, c in count_prim.most_common():
-        print(f"{cat}: {c}")
-        
-    return count_prim
-
-def encoding_hashtags(df):
-    #df["primary_category"] = df["hashtag_categories"].apply(get_primary_category)
-    le = LabelEncoder()
-    df['primary_category_encoded'] = le.fit_transform(df['primary_category'])
-    print("\n")
-    print(dict(zip(le.classes_, le.transform(le.classes_))))
-    
-    return df,le 
 
 def random_forest_classification(df, le):
     X = df[['Likes', 'Retweets']]
