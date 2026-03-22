@@ -6,6 +6,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+
 
 
 CATEGORY_KEYWORDS = {
@@ -249,12 +252,68 @@ def random_forest_classification(df, le):
     
     fig, ax = plt.subplots(figsize=(12,9))
     disp.plot(cmap=plt.cm.Blues, xticks_rotation=45, ax=ax)
-    plt.title("Confusion Matrix")
+    plt.title("Confusion Matrix Random Forest")
     plt.tight_layout()
     plt.show()
     
     
     return rf_model
+
+
+def knn_classification(df, le):
+    X = df[['Likes', 'Retweets']]
+    y = df['primary_category_encoded']
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+    
+    knn_model = KNeighborsClassifier(n_neighbors=5)
+    knn_model.fit(X_train, y_train)
+    
+    y_pred = knn_model.predict(X_test)
+    
+    accuracy = accuracy_score(y_test, y_pred)
+    print("\nknn accuracy: ", accuracy)
+    report = classification_report(y_test, y_pred, target_names= le.classes_, zero_division=0)
+    print("\nknn classification report: ", report)
+    cm = confusion_matrix(y_test, y_pred, normalize='true')
+    
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
+    
+    fig, ax = plt.subplots(figsize=(12,9))
+    disp.plot(cmap=plt.cm.pink, xticks_rotation=45, ax=ax)
+    plt.title("Confusion Matrix kNN")
+    plt.tight_layout()
+    plt.show()
+    
+    return knn_model
+
+
+def svm_classification(df, le):
+    X = df[['Likes', 'Retweets']]
+    y = df['primary_category_encoded']
+    
+    X_train, X_test, y_train , y_test = train_test_split(X, y ,test_size=0.2, random_state=42, stratify=y)
+    
+    svm_model = SVC(kernel='rbf', class_weight='balanced', random_state=42)
+    svm_model.fit(X_train, y_train)
+    
+    y_pred = svm_model.predict(X_test)
+    
+    accuracy = accuracy_score(y_test, y_pred)
+    print("\nsvm accuracy: ", accuracy)
+    report = classification_report(y_test, y_pred, target_names=le.classes_, zero_division=0)
+    print("\nsvm classification report: ", report)
+    cm = confusion_matrix(y_test, y_pred, normalize='true')
+    
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
+    
+    fig, ax = plt.subplots(figsize=(12,9))
+    disp.plot(cmap=plt.cm.Greens, xticks_rotation=45, ax=ax)
+    plt.title("Confusion Matrix SVM")
+    plt.tight_layout()
+    plt.show()
+    
+    return svm_model
 
     
 def main():
@@ -265,8 +324,10 @@ def main():
     
     df, le = encoding_hashtags(df)
     model = random_forest_classification(df, le)
+    model2 = knn_classification(df, le)
+    model3 = svm_classification(df, le)
     
-    return df, hashtag_counts, category_counts, primary_counts, model
+    return df, hashtag_counts, category_counts, primary_counts, model, model2, model3
 
 if __name__ == "__main__":
     main()
