@@ -8,7 +8,9 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
-
+import numpy as np
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout
 
 
 CATEGORY_KEYWORDS = {
@@ -234,15 +236,28 @@ def load_data():
 def random_forest_classification(df, le):
     X = df[['Likes', 'Retweets']]
     y = df['primary_category_encoded']
+    print("to x:", X)
+    print("to y:" ,y)
     
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
     rf_model = RandomForestClassifier(n_estimators=100, random_state=42, class_weight='balanced')
     rf_model.fit(X_train, y_train)
     
     y_pred = rf_model.predict(X_test)
     
-    accuracy = accuracy_score(y_test, y_pred)
+    print("y_test: ", y_test)
+    print("\ny_pred: ", y_pred)
+    
+    y_test1 = y_test.values
+    print("y_test1: ", y_test1)
+    
+    
+    ##rf_model.accuracy
+    ##print("\nrf_model.accuracy", rf_model.accuracy)
+    
+    
+    accuracy = accuracy_score(y_test1, y_pred)
     print("\nAccuracy: ",accuracy)
     report = classification_report(y_test, y_pred, target_names=le.classes_, zero_division=0)
     print("\nClassification Report: ", report)
@@ -264,7 +279,7 @@ def knn_classification(df, le):
     X = df[['Likes', 'Retweets']]
     y = df['primary_category_encoded']
     
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
     knn_model = KNeighborsClassifier(n_neighbors=5)
     knn_model.fit(X_train, y_train)
@@ -292,7 +307,7 @@ def svm_classification(df, le):
     X = df[['Likes', 'Retweets']]
     y = df['primary_category_encoded']
     
-    X_train, X_test, y_train , y_test = train_test_split(X, y ,test_size=0.2, random_state=42, stratify=y)
+    X_train, X_test, y_train , y_test = train_test_split(X, y ,test_size=0.2, random_state=42)
     
     svm_model = SVC(kernel='rbf', class_weight='balanced', random_state=42)
     svm_model.fit(X_train, y_train)
@@ -315,6 +330,75 @@ def svm_classification(df, le):
     
     return svm_model
 
+
+def lstm_classification(df, le):
+    X = df[['Likes', 'Retweets']].values
+    y = df['primary_category_encoded'].values
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    X_train_3d = X_train.reshape((X_train.shape[0], 1, X_train.shape[1]))
+    X_test_3d = X_test.reshape((X_test.shape[0], 1, X_test.shape[1]))
+    
+    lstm_model = Sequential([
+        LSTM(64, input_shape=(1, 2), activation='relu'),
+        Dropout(0.2),
+        Dense(32, activation='relu'),
+        Dense(len(le.classes_), activation='softmax')
+        ])
+    
+    lstm_model.compile(optimizer='adam',
+                       loss='sparse_categorical_crossentropy',
+                       metrics=['accuracy'])
+    
+    history = lstm_model.fit(X_train_3d, y_train, epochs=25, batch_size=16, verbose=1)
+    
+    y_pred_probs = lstm_model.predict(X_test_3d)
+    y_pred = np.argmax(y_pred_probs, axis=1)
+    
+    accuracy = accuracy_score(y_test, y_pred)
+    print("\nLSTM Accuracy: ", accuracy)
+    report = classification_report(y_test, y_pred, target_names=le.classes_, zero_division=0)
+    print("\nclassification report: ", report)
+    
+   
+    
+    
+    
+    plt.figure(figsize=(12, 5))
+    
+
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'], label='Train Accuracy', color='#2ecc71', marker='o')
+    plt.title('LSTM Model Accuracy progression')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+
+
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'], label='Train Loss', color='#e74c3c', marker='o')
+    plt.title('LSTM Model Loss reduction')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.show()
+    
+    cm = confusion_matrix(y_test, y_pred, normalize='true')
+    
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
+    
+    fig, ax = plt.subplots(figsize=(12, 9))
+    disp.plot(cmap=plt.cm.Oranges, xticks_rotation=45, ax=ax)
+    plt.title("Confusion Matrix LSTM")
+    plt.tight_layout()
+    plt.show()
+
+
+    
+    return lstm_model
     
 def main():
     df = load_data()
@@ -326,8 +410,9 @@ def main():
     model = random_forest_classification(df, le)
     model2 = knn_classification(df, le)
     model3 = svm_classification(df, le)
+    model4 = lstm_classification(df, le)
     
-    return df, hashtag_counts, category_counts, primary_counts, model, model2, model3
+    return df, hashtag_counts, category_counts, primary_counts, model, model2, model3, model4
 
 if __name__ == "__main__":
     main()
