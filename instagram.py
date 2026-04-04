@@ -10,7 +10,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 import numpy as np
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
+from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional
 
 
 CATEGORY_KEYWORDS = {
@@ -120,11 +120,13 @@ def hashtag_frequency(df, top_n=20):
             
     counts = Counter(all_tags)
     
+    """
     print("\nΣύνολο μοναδικών hshtags: ", len(counts))
     print(f"\nTop {top_n} hashtags:")
     for tag, c in counts.most_common(top_n):
         print(f"{tag}: {c}")
-        
+    """
+    
     return counts
 
 
@@ -167,10 +169,12 @@ def category_frequency(df, top_n=20):
             
     counts = Counter(all_cats)
     
+    """
     print("\nΣυχνότητα κατηγοριών: ")
     for cat, c in counts.most_common():
         print(f"{cat}: {c}")
-        
+    """ 
+    
     return counts
 
 
@@ -183,11 +187,13 @@ def get_primary_category(categories):
 
 def primary_category_frequency(df):
     count_prim = Counter(df["primary_category"])
-  
+    
+    """
     print("\nΣυχνότητα primary category: ")
     for cat, c in count_prim.most_common():
         print(f"{cat}: {c}")
-        
+    """
+    
     return count_prim
 
 
@@ -195,8 +201,10 @@ def encoding_hashtags(df):
     #df["primary_category"] = df["hashtag_categories"].apply(get_primary_category)
     le = LabelEncoder()
     df['primary_category_encoded'] = le.fit_transform(df['primary_category'])
+    """
     print("\n")
     print(dict(zip(le.classes_, le.transform(le.classes_))))
+    """
     
     return df,le 
 
@@ -204,31 +212,37 @@ def encoding_hashtags(df):
 def load_data():
     df = pd.read_csv(r"C:\Users\Eleni\OneDrive\Υπολογιστής\sentimentdataset.csv", sep=';')
     
+    """
     print("Αρχικό dataset: ", df.shape)
     print("Στήλες: ", df.columns)
     print("Ελλιπείς τιμές: ", df.isnull().sum())
+    """
     duplicates = df.duplicated().sum()
-    print(f"\nΠλήθος διπλότυπων γραμμών: {duplicates}")
+    #print(f"\nΠλήθος διπλότυπων γραμμών: {duplicates}")
     
     if "Hashtags" in df.columns:
         df["hashtags_list"] = df["Hashtags"].apply(parse_hashtags)
     else:
         raise KeyError("Δεν βρέθηκε στήλη 'Hashtags' στο αρχείο!")
-        
+    
+    """   
     print("\nΔείγμα hashtags πριν και μετά:")
     print(df[["Hashtags", "hashtags_list"]].head(20))
     
     empty_tags = (df["hashtags_list"].str.len() == 0).sum()
     print(f'\nΓραμμές χωρίς hashtags: {empty_tags}')
+    """
     
     df["hashtag_categories"] = df["hashtags_list"].apply(assign_category)
     df["primary_category"] = df["hashtag_categories"].apply(get_primary_category)
     
+    """
     print("\nΔείγμα κατηγοριών: ")
     print(df[["hashtags_list", "hashtag_categories"]].head(20))
     
     print("\nΔείγμα primary category: ")
     print(df[["hashtags_list", "hashtag_categories", "primary_category"]].head(20))
+    """
     
     return df
 
@@ -236,8 +250,8 @@ def load_data():
 def random_forest_classification(df, le):
     X = df[['Likes', 'Retweets']]
     y = df['primary_category_encoded']
-    print("to x:", X)
-    print("to y:" ,y)
+    #print("to x:", X)
+    #print("to y:" ,y)
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
@@ -246,21 +260,23 @@ def random_forest_classification(df, le):
     
     y_pred = rf_model.predict(X_test)
     
-    print("y_test: ", y_test)
-    print("\ny_pred: ", y_pred)
+    #print("y_test: ", y_test)
+    #print("\ny_pred: ", y_pred)
     
     y_test1 = y_test.values
-    print("y_test1: ", y_test1)
-    
+    #print("y_test1: ", y_test1)
     
     ##rf_model.accuracy
     ##print("\nrf_model.accuracy", rf_model.accuracy)
     
     
     accuracy = accuracy_score(y_test1, y_pred)
-    print("\nAccuracy: ",accuracy)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    print("\t-Random Forest Accuracy: ",accuracy)
     report = classification_report(y_test, y_pred, target_names=le.classes_, zero_division=0)
-    print("\nClassification Report: ", report)
+    print("\n\t-Random Forest Classification Report: ", report)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    
     cm = confusion_matrix(y_test, y_pred, normalize='true')
     
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
@@ -270,7 +286,6 @@ def random_forest_classification(df, le):
     plt.title("Confusion Matrix Random Forest")
     plt.tight_layout()
     plt.show()
-    
     
     return rf_model
 
@@ -287,9 +302,12 @@ def knn_classification(df, le):
     y_pred = knn_model.predict(X_test)
     
     accuracy = accuracy_score(y_test, y_pred)
-    print("\nknn accuracy: ", accuracy)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    print("\t-KNN Accuracy: ", accuracy)
     report = classification_report(y_test, y_pred, target_names= le.classes_, zero_division=0)
-    print("\nknn classification report: ", report)
+    print("\n\t-KNN Classification Report: ", report)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    
     cm = confusion_matrix(y_test, y_pred, normalize='true')
     
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
@@ -315,9 +333,12 @@ def svm_classification(df, le):
     y_pred = svm_model.predict(X_test)
     
     accuracy = accuracy_score(y_test, y_pred)
-    print("\nsvm accuracy: ", accuracy)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    print("\t-SVM Accuracy: ", accuracy)
     report = classification_report(y_test, y_pred, target_names=le.classes_, zero_division=0)
-    print("\nsvm classification report: ", report)
+    print("\n\t-SVM Classification Report: ", report)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    
     cm = confusion_matrix(y_test, y_pred, normalize='true')
     
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
@@ -357,28 +378,23 @@ def lstm_classification(df, le):
     y_pred = np.argmax(y_pred_probs, axis=1)
     
     accuracy = accuracy_score(y_test, y_pred)
-    print("\nLSTM Accuracy: ", accuracy)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    print("\t-LSTM Accuracy: ", accuracy)
     report = classification_report(y_test, y_pred, target_names=le.classes_, zero_division=0)
-    print("\nclassification report: ", report)
-    
-   
-    
-    
+    print("\n\t-LSTM Classification Report: ", report)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")    
     
     plt.figure(figsize=(12, 5))
-    
-
     plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='Train Accuracy', color='#2ecc71', marker='o')
+    plt.plot(history.history['accuracy'], label='Train Accuracy', color='lightgreen', marker='o')
     plt.title('LSTM Model Accuracy progression')
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.6)
 
-
     plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='Train Loss', color='#e74c3c', marker='o')
+    plt.plot(history.history['loss'], label='Train Loss', color='red', marker='o')
     plt.title('LSTM Model Loss reduction')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
@@ -396,10 +412,72 @@ def lstm_classification(df, le):
     plt.tight_layout()
     plt.show()
 
-
-    
     return lstm_model
+
+
+def bilstm_classification(df, le):
+    X = df[['Likes', 'Retweets']].values
+    y = df['primary_category_encoded'].values
     
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    X_train_3d = X_train.reshape((X_train.shape[0], 1, X_train.shape[1]))
+    X_test_3d = X_test.reshape((X_test.shape[0], 1, X_test.shape[1]))
+    
+    bilstm_model = Sequential([
+        Bidirectional(LSTM(64, input_shape=(1, 2), activation='relu')),
+        Dropout(0.2),
+        Dense(32, activation='relu'),
+        Dense(len(le.classes_), activation='softmax')
+        ])
+    
+    bilstm_model.compile(optimizer='adam',
+                       loss='sparse_categorical_crossentropy',
+                       metrics=['accuracy'])
+    
+    history = bilstm_model.fit(X_train_3d, y_train, epochs=25, batch_size=16, verbose=1)
+    
+    y_pred_probs = bilstm_model.predict(X_test_3d)
+    y_pred = np.argmax(y_pred_probs, axis=1)
+    
+    accuracy = accuracy_score(y_test, y_pred)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    print("\t-Bi-LSTM Accuracy: ", accuracy)
+    report = classification_report(y_test, y_pred, target_names=le.classes_, zero_division=0)
+    print("\n\t-Bi-LSTM Classification Report: ", report)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'], label='Train Accuracy', color='lightblue', marker='o')
+    plt.title('Bi-LSTM Model Accuracy progression')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'], label='Train Loss', color='purple', marker='o')
+    plt.title('Bi-LSTM Model Loss reduction')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.show()
+    
+    cm = confusion_matrix(y_test, y_pred, normalize='true')
+    
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
+    
+    fig, ax = plt.subplots(figsize=(12, 9))
+    disp.plot(cmap=plt.cm.Reds, xticks_rotation=45, ax=ax)
+    plt.title("Confusion Matrix Bi-LSTM")
+    plt.tight_layout()
+    plt.show()
+
+    return bilstm_model
+    
+
 def main():
     df = load_data()
     hashtag_counts = hashtag_frequency(df, top_n=20)
@@ -411,8 +489,9 @@ def main():
     model2 = knn_classification(df, le)
     model3 = svm_classification(df, le)
     model4 = lstm_classification(df, le)
+    model5 = bilstm_classification(df, le)
     
-    return df, hashtag_counts, category_counts, primary_counts, model, model2, model3, model4
+    return df, hashtag_counts, category_counts, primary_counts, model, model2, model3, model4, model5
 
 if __name__ == "__main__":
     main()
