@@ -10,7 +10,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 import numpy as np
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional
+from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional, Input
 
 
 CATEGORY_KEYWORDS = {
@@ -212,14 +212,6 @@ def encoding_hashtags(df):
 def load_data():
     df = pd.read_csv(r"C:\Users\Eleni\OneDrive\Υπολογιστής\sentimentdataset.csv", sep=';')
     
-    """
-    print("Αρχικό dataset: ", df.shape)
-    print("Στήλες: ", df.columns)
-    print("Ελλιπείς τιμές: ", df.isnull().sum())
-    """
-    duplicates = df.duplicated().sum()
-    #print(f"\nΠλήθος διπλότυπων γραμμών: {duplicates}")
-    
     if "Hashtags" in df.columns:
         df["hashtags_list"] = df["Hashtags"].apply(parse_hashtags)
     else:
@@ -235,6 +227,11 @@ def load_data():
     
     df["hashtag_categories"] = df["hashtags_list"].apply(assign_category)
     df["primary_category"] = df["hashtag_categories"].apply(get_primary_category)
+    
+    df["hashtags_Count"] = df["hashtags_list"].apply(len)
+    
+    le_platform = LabelEncoder()
+    df["Platform_encoded"] = le_platform.fit_transform(df["Platform"])
     
     """
     print("\nΔείγμα κατηγοριών: ")
@@ -476,8 +473,72 @@ def bilstm_classification(df, le):
     plt.show()
 
     return bilstm_model
-    
 
+ 
+def bilstm_classification2(df, le):
+    X = df[['Likes', 'Retweets', 'hashtags_Count', 'Platform_encoded']].values
+    y = df['primary_category_encoded'].values
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    X_train_3d = X_train.reshape((X_train.shape[0], 1, 4))
+    X_test_3d = X_test.reshape((X_test.shape[0], 1, 4))
+    
+    bilstm_model2 = Sequential([
+        Input(shape=(1,4)),
+        Bidirectional(LSTM(64, activation='relu')),
+        Dropout(0.2),
+        Dense(32, activation='relu'),
+        Dense(len(le.classes_), activation='softmax')
+        ])
+    
+    bilstm_model2.compile(optimizer='adam',
+                          loss='sparse_categorical_crossentropy',
+                          metrics=['accuracy'])
+    
+    history = bilstm_model2.fit(X_train_3d, y_train, epochs=30, batch_size=16, verbose=1)
+    
+    y_pred_probs = bilstm_model2.predict(X_test_3d)
+    y_pred = np.argmax(y_pred_probs, axis=1)
+    
+    accuracy = accuracy_score(y_test, y_pred)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    print("\t-Bi-LSTM2 Accuracy: ", accuracy)
+    report = classification_report(y_test, y_pred, target_names=le.classes_, zero_division=0)
+    print("\n\t-Bi-LSTM2 Classification Report: ", report)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'], label='Train Accuracy', color='lightgrey', marker='o')
+    plt.title('Bi-LSTM2 Model Accuracy progression')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'], label='Train Loss', color='orange', marker='o')
+    plt.title('Bi-LSTM2 Model Loss reduction')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.show()
+    
+    cm = confusion_matrix(y_test, y_pred, normalize='true')
+    
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
+    
+    fig, ax = plt.subplots(figsize=(12, 9))
+    disp.plot(cmap=plt.cm.Pastel1, xticks_rotation=45, ax=ax)
+    plt.title("Confusion Matrix Bi-LSTM2")
+    plt.tight_layout()
+    plt.show()
+
+    return bilstm_model2
+   
+    
 def main():
     df = load_data()
     hashtag_counts = hashtag_frequency(df, top_n=20)
@@ -490,8 +551,9 @@ def main():
     model3 = svm_classification(df, le)
     model4 = lstm_classification(df, le)
     model5 = bilstm_classification(df, le)
+    model6 = bilstm_classification2(df, le)
     
-    return df, hashtag_counts, category_counts, primary_counts, model, model2, model3, model4, model5
+    return df, hashtag_counts, category_counts, primary_counts, model, model2, model3, model4, model5, model6
 
 if __name__ == "__main__":
     main()
