@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 import numpy as np
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional, Input
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional, Input, concatenate
 
 
 CATEGORY_KEYWORDS = {
@@ -232,6 +232,9 @@ def load_data():
     
     le_platform = LabelEncoder()
     df["Platform_encoded"] = le_platform.fit_transform(df["Platform"])
+    
+    le_sentiment = LabelEncoder()
+    df["Sentiment_encoded"] = le_sentiment.fit_transform(df['Sentiment'])
     
     """
     print("\nΔείγμα κατηγοριών: ")
@@ -537,7 +540,80 @@ def bilstm_classification2(df, le):
     plt.show()
 
     return bilstm_model2
-   
+
+
+def bilstm_hybrid(df, le):
+    X1 = df[['Likes', 'Retweets']].values
+    X2 = df[['hashtags_Count', 'Platform_encoded', 'Sentiment_encoded']].values
+    y = df['primary_category_encoded'].values
+    
+    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, test_size=0.2, random_state=42)
+    
+    X1_train_3d = X1_train.reshape((X1_train.shape[0], 1 ,2))
+    X1_test_3d = X1_test.reshape((X1_test.shape[0], 1, 2))
+    X2_train_3d = X2_train.reshape((X2_train.shape[0], 1, 3))
+    X2_test_3d = X2_test.reshape((X2_test.shape[0], 1, 3))
+    
+    input1 = Input(shape=(1, 2))
+    lstm1 = Bidirectional(LSTM(64, activation='relu'))(input1)
+    drop1 = Dropout(0.2)(lstm1)
+    
+    input2 = Input(shape=(1, 3))
+    lstm2 = Bidirectional(LSTM(64, activation='relu'))(input2)
+    drop2 = Dropout(0.2)(lstm2)
+    
+    merged = concatenate([drop1, drop2])
+    
+    dense1 = Dense(32, activation='relu')(merged)
+    output = Dense(len(le.classes_), activation='softmax')(dense1)
+    
+    model = Model(inputs=[input1, input2], outputs=output)
+    
+    model.compile(optimizer='adam',
+                  loss='sparse_categorical_crossentropy',
+                  metrics=['accuracy'])
+    
+    history = model.fit([X1_train_3d, X2_train_3d], y_train, epochs=30, batch_size=16, verbose=1)
+    
+    y_pred_probs = model.predict([X1_test_3d, X2_test_3d])
+    y_pred = np.argmax(y_pred_probs, axis=1)
+    
+    accuracy = accuracy_score(y_test, y_pred)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    print("\t-Bi-LSTM-hybrid Accuracy: ", accuracy)
+    report = classification_report(y_test, y_pred, target_names=le.classes_, zero_division=0)
+    print("\n\t-Bi-LSTM-hybrid Classification Report: ", report)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'], label='Train Accuracy', color='lightpink', marker='o')
+    plt.title('Bi-LSTM-hybrid Model Accuracy progression')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'], label='Train Loss', color='pink', marker='o')
+    plt.title('Bi-LSTM-hybrid Model Loss reduction')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.show()
+    
+    cm = confusion_matrix(y_test, y_pred, normalize='true')
+    
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
+    
+    fig, ax = plt.subplots(figsize=(12, 9))
+    disp.plot(cmap=plt.cm.Pastel2, xticks_rotation=45, ax=ax)
+    plt.title("Confusion Matrix Bi-LSTM-hybrid")
+    plt.tight_layout()
+    plt.show()
+    
+    return model
     
 def main():
     df = load_data()
@@ -552,8 +628,9 @@ def main():
     model4 = lstm_classification(df, le)
     model5 = bilstm_classification(df, le)
     model6 = bilstm_classification2(df, le)
+    model7 = bilstm_hybrid(df, le)
     
-    return df, hashtag_counts, category_counts, primary_counts, model, model2, model3, model4, model5, model6
+    return df, hashtag_counts, category_counts, primary_counts, model, model2, model3, model4, model5, model6, model7
 
 if __name__ == "__main__":
     main()
