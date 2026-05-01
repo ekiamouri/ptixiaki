@@ -10,7 +10,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 import numpy as np
 from tensorflow.keras.models import Sequential, Model
-from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional, Input, concatenate, Embedding
+from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional, Input, concatenate, Embedding, SpatialDropout1D, BatchNormalization
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
@@ -607,6 +607,7 @@ def bilstm_hybrid(df, le):
     
     return model
 
+
 def bilstm_numeric_text(df, le):
     X1 = df[['Likes', 'Retweets']].values
     X2 = df['metadata_text']
@@ -625,17 +626,23 @@ def bilstm_numeric_text(df, le):
     X1_test_3d = X1_test.reshape((X1_test.shape[0], 1, 2))
     
     input_num = Input(shape=(1, 2))
-    lstm_num = Bidirectional(LSTM(64))(input_num)
-    drop_num = Dropout(0.2)(lstm_num)
+    lstm_num = Bidirectional(LSTM(128))(input_num)
+    drop_num = Dropout(0.3)(lstm_num)
     
     input_text = Input(shape=(15, ))
-    embed_text = Embedding(input_dim=vocab_size, output_dim=50)(input_text)
-    lstm_text = Bidirectional(LSTM(64))(embed_text)
-    drop_text = Dropout(0.2)(lstm_text)
+    embed_text = Embedding(input_dim=vocab_size, output_dim=128)(input_text)
+    spatial_drop = SpatialDropout1D(0.2)(embed_text)
+    
+    lstm_text_1 = Bidirectional(LSTM(64, return_sequences=True))(spatial_drop)
+    lstm_text_2 = Bidirectional(LSTM(64))(lstm_text_1)
+    drop_text = Dropout(0.3)(lstm_text_2)
     
     merged = concatenate([drop_num, drop_text])
     
-    dense = Dense(32, activation='relu')(merged)
+    dense = BatchNormalization()(merged)
+    dense = Dense(128, activation='relu')(dense)
+    dense = Dropout(0.3)(dense)
+    
     output = Dense(len(le.classes_), activation='softmax')(dense)
     
     model = Model(inputs=[input_num, input_text], outputs=output)
@@ -644,7 +651,7 @@ def bilstm_numeric_text(df, le):
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
     
-    history = model.fit(x=[X1_train_3d, X2_train], y=y_train, epochs=30, batch_size=16, verbose=1)
+    history = model.fit(x=[X1_train_3d, X2_train], y=y_train, epochs=40, batch_size=32, verbose=1)
     
     y_pred_probs = model.predict([X1_test_3d, X2_test])
     y_pred = np.argmax(y_pred_probs, axis=1)   
@@ -685,7 +692,9 @@ def bilstm_numeric_text(df, le):
     plt.show()
     
     return model
-    
+
+
+
     
 def main():
     df = load_data()
