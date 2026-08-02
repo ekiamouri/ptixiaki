@@ -242,8 +242,6 @@ def load_data():
 def random_forest_classification(df, le):
     X = df[['Likes', 'Retweets']]
     y = df['primary_category_encoded']
-    #print("to x:", X)
-    #print("to y:" ,y)
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
@@ -252,15 +250,7 @@ def random_forest_classification(df, le):
     
     y_pred = rf_model.predict(X_test)
     
-    #print("y_test: ", y_test)
-    #print("\ny_pred: ", y_pred)
-    
-    y_test1 = y_test.values
-    #print("y_test1: ", y_test1)
-    
-    ##rf_model.accuracy
-    ##print("\nrf_model.accuracy", rf_model.accuracy)
-    
+    y_test1 = y_test.values    
     
     accuracy = accuracy_score(y_test1, y_pred)
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
@@ -279,7 +269,7 @@ def random_forest_classification(df, le):
     plt.tight_layout()
     plt.show()
     
-    return rf_model
+    return rf_model, accuracy
 
 
 def knn_classification(df, le):
@@ -310,7 +300,7 @@ def knn_classification(df, le):
     plt.tight_layout()
     plt.show()
     
-    return knn_model
+    return knn_model, accuracy
 
 
 def svm_classification(df, le):
@@ -341,7 +331,7 @@ def svm_classification(df, le):
     plt.tight_layout()
     plt.show()
     
-    return svm_model
+    return svm_model, accuracy
 
 
 def lstm_classification(df, le):
@@ -404,7 +394,7 @@ def lstm_classification(df, le):
     plt.tight_layout()
     plt.show()
 
-    return lstm_model
+    return lstm_model, accuracy
 
 
 def bilstm_classification(df, le):
@@ -467,7 +457,7 @@ def bilstm_classification(df, le):
     plt.tight_layout()
     plt.show()
 
-    return bilstm_model
+    return bilstm_model, accuracy
 
  
 def bilstm_classification2(df, le):
@@ -531,7 +521,7 @@ def bilstm_classification2(df, le):
     plt.tight_layout()
     plt.show()
 
-    return bilstm_model2
+    return bilstm_model2, accuracy
 
 
 def bilstm_hybrid(df, le):
@@ -605,7 +595,7 @@ def bilstm_hybrid(df, le):
     plt.tight_layout()
     plt.show()
     
-    return model
+    return model, accuracy
 
 
 def bilstm_numeric_text(df, le):
@@ -647,9 +637,7 @@ def bilstm_numeric_text(df, le):
     
     model = Model(inputs=[input_num, input_text], outputs=output)
     
-    model.compile(optimizer='adam',
-                  loss='sparse_categorical_crossentropy',
-                  metrics=['accuracy'])
+    model.compile(optimizer='adam',loss='sparse_categorical_crossentropy',metrics=['accuracy'])
     
     history = model.fit(x=[X1_train_3d, X2_train], y=y_train, epochs=40, batch_size=32, verbose=1)
     
@@ -691,10 +679,36 @@ def bilstm_numeric_text(df, le):
     plt.tight_layout()
     plt.show()
     
-    return model
+    return model, accuracy
 
 
+def plot_model_accuracies(results):
+    model_names = list(results.keys())
+    accuracies = list(results.values())
 
+    plt.figure(figsize=(12, 7))
+
+    bars = plt.bar(model_names, accuracies)
+
+    plt.title("Comparison of Model Accuracy")
+    plt.xlabel("Model")
+    plt.ylabel("Accuracy")
+    plt.ylim(0, 1)
+    plt.xticks(rotation=45, ha="right")
+
+    for bar, accuracy in zip(bars, accuracies):
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.015,
+            f"{accuracy * 100:.2f}%",
+            ha="center",
+            va="bottom"
+        )
+
+    plt.grid(axis="y", linestyle="--", alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+    
     
 def main():
     df = load_data()
@@ -703,16 +717,33 @@ def main():
     primary_counts = primary_category_frequency(df)
     
     df, le = encoding_hashtags(df)
-    model = random_forest_classification(df, le)
-    model2 = knn_classification(df, le)
-    model3 = svm_classification(df, le)
-    model4 = lstm_classification(df, le)
-    model5 = bilstm_classification(df, le)
-    model6 = bilstm_classification2(df, le)
-    model7 = bilstm_hybrid(df, le)
-    model8 = bilstm_numeric_text(df, le)
+    model, rf_accuracy = random_forest_classification(df, le)
+    model2, knn_accuracy = knn_classification(df, le)
+    model3, svm_accuracy = svm_classification(df, le)
+    model4, lstm_accuracy = lstm_classification(df, le)
+    model5, bilstm_accuracy = bilstm_classification(df, le)
+    model6, bilstm2_accuracy = bilstm_classification2(df, le)
+    model7, hybrid_accuracy = bilstm_hybrid(df, le)
+    model8, numeric_text_accuracy = bilstm_numeric_text(df, le)
+    
+    accuracy_results = {
+        "Random Forest": rf_accuracy,
+        "kNN": knn_accuracy,
+        "SVM": svm_accuracy,
+        "LSTM": lstm_accuracy,
+        "Bi-LSTM": bilstm_accuracy,
+        "Bi-LSTM2": bilstm2_accuracy,
+        "Bi-LSTM Hybrid": hybrid_accuracy,
+        "Bi-LSTM Numeric + Text": numeric_text_accuracy
+        }
+
+    plot_model_accuracies(accuracy_results)
     
     return df, hashtag_counts, category_counts, primary_counts, model, model2, model3, model4, model5, model6, model7, model8
+
+    
+    return df, hashtag_counts, category_counts, primary_counts, model, model2, model3, model4, model5, model6, model7, model8
+
 
 if __name__ == "__main__":
     main()
