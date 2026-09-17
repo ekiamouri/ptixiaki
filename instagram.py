@@ -1,3 +1,8 @@
+############## ΟΝΟΜΑΤΕΠΩΝΥΜΟ: ΚΙΑΜΟΥΡΗ ΕΛΕΝΗ, ΑΜ: 2122157 
+############## DATASET: https://www.kaggle.com/datasets/kashishparmar02/social-media-sentiments-analysis-dataset?utm_source=chatgpt.com
+
+
+
 import pandas as pd
 import re
 from collections import Counter
@@ -295,7 +300,7 @@ def knn_classification(df, le):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
     
     fig, ax = plt.subplots(figsize=(12,9))
-    disp.plot(cmap=plt.cm.pink, xticks_rotation=45, ax=ax)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation=45, ax=ax)
     plt.title("Confusion Matrix kNN")
     plt.tight_layout()
     plt.show()
@@ -326,7 +331,7 @@ def svm_classification(df, le):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
     
     fig, ax = plt.subplots(figsize=(12,9))
-    disp.plot(cmap=plt.cm.Greens, xticks_rotation=45, ax=ax)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation=45, ax=ax)
     plt.title("Confusion Matrix SVM")
     plt.tight_layout()
     plt.show()
@@ -368,7 +373,7 @@ def lstm_classification(df, le):
     
     plt.figure(figsize=(12, 5))
     plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='Train Accuracy', color='lightgreen', marker='o')
+    plt.plot(history.history['accuracy'], label='Train Accuracy', color='lightblue', marker='o')
     plt.title('LSTM Model Accuracy progression')
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
@@ -376,7 +381,7 @@ def lstm_classification(df, le):
     plt.grid(True, linestyle='--', alpha=0.6)
 
     plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='Train Loss', color='red', marker='o')
+    plt.plot(history.history['loss'], label='Train Loss', color='purple', marker='o')
     plt.title('LSTM Model Loss reduction')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
@@ -389,7 +394,7 @@ def lstm_classification(df, le):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
     
     fig, ax = plt.subplots(figsize=(12, 9))
-    disp.plot(cmap=plt.cm.Oranges, xticks_rotation=45, ax=ax)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation=45, ax=ax)
     plt.title("Confusion Matrix LSTM")
     plt.tight_layout()
     plt.show()
@@ -452,7 +457,7 @@ def bilstm_classification(df, le):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
     
     fig, ax = plt.subplots(figsize=(12, 9))
-    disp.plot(cmap=plt.cm.Reds, xticks_rotation=45, ax=ax)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation=45, ax=ax)
     plt.title("Confusion Matrix Bi-LSTM")
     plt.tight_layout()
     plt.show()
@@ -495,7 +500,7 @@ def bilstm_classification2(df, le):
     
     plt.figure(figsize=(12, 5))
     plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='Train Accuracy', color='lightgrey', marker='o')
+    plt.plot(history.history['accuracy'], label='Train Accuracy', color='lightblue', marker='o')
     plt.title('Bi-LSTM2 Model Accuracy progression')
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
@@ -503,7 +508,7 @@ def bilstm_classification2(df, le):
     plt.grid(True, linestyle='--', alpha=0.6)
 
     plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='Train Loss', color='orange', marker='o')
+    plt.plot(history.history['loss'], label='Train Loss', color='purple', marker='o')
     plt.title('Bi-LSTM2 Model Loss reduction')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
@@ -516,7 +521,7 @@ def bilstm_classification2(df, le):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
     
     fig, ax = plt.subplots(figsize=(12, 9))
-    disp.plot(cmap=plt.cm.Pastel1, xticks_rotation=45, ax=ax)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation=45, ax=ax)
     plt.title("Confusion Matrix Bi-LSTM2")
     plt.tight_layout()
     plt.show()
@@ -569,7 +574,7 @@ def bilstm_hybrid(df, le):
     
     plt.figure(figsize=(12, 5))
     plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='Train Accuracy', color='lightpink', marker='o')
+    plt.plot(history.history['accuracy'], label='Train Accuracy', color='lightblue', marker='o')
     plt.title('Bi-LSTM-hybrid Model Accuracy progression')
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
@@ -577,7 +582,7 @@ def bilstm_hybrid(df, le):
     plt.grid(True, linestyle='--', alpha=0.6)
 
     plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='Train Loss', color='pink', marker='o')
+    plt.plot(history.history['loss'], label='Train Loss', color='purple', marker='o')
     plt.title('Bi-LSTM-hybrid Model Loss reduction')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
@@ -590,7 +595,7 @@ def bilstm_hybrid(df, le):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
     
     fig, ax = plt.subplots(figsize=(12, 9))
-    disp.plot(cmap=plt.cm.Pastel2, xticks_rotation=45, ax=ax)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation=45, ax=ax)
     plt.title("Confusion Matrix Bi-LSTM-hybrid")
     plt.tight_layout()
     plt.show()
@@ -653,7 +658,7 @@ def bilstm_numeric_text(df, le):
     
     plt.figure(figsize=(12, 5))
     plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='Train Accuracy', color='coral', marker='o')
+    plt.plot(history.history['accuracy'], label='Train Accuracy', color='lightblue', marker='o')
     plt.title('Bi-LSTM Numeric + Text Model Accuracy progression')
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
@@ -661,7 +666,7 @@ def bilstm_numeric_text(df, le):
     plt.grid(True, linestyle='--', alpha=0.6)
 
     plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='Train Loss', color='green', marker='o')
+    plt.plot(history.history['loss'], label='Train Loss', color='purple', marker='o')
     plt.title('Bi-LSTM Numeric + Text Model Loss reduction')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
@@ -674,7 +679,7 @@ def bilstm_numeric_text(df, le):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
     
     fig, ax = plt.subplots(figsize=(12, 9))
-    disp.plot(cmap=plt.cm.Accent, xticks_rotation=45, ax=ax)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation=45, ax=ax)
     plt.title("Confusion Matrix Bi-LSTM Numeric + Text")
     plt.tight_layout()
     plt.show()
